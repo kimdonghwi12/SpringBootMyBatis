@@ -10,6 +10,7 @@ import kopo.poly.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -187,6 +188,105 @@ public class UserInfoController {
         log.info("{}.loginResult End!",this.getClass().getName());
 
         return "user/loginResult";
+    }
+    @GetMapping(value = "searchUserId")
+    public String searchUserId(){
+        log.info("{}.searchUserId Start!",this.getClass().getName());
+
+        log.info("{}.searchUserId End!",this.getClass().getName());
+
+        return "user/searchUserId";
+    }
+
+    @PostMapping(value = "searchUserIdProc")
+    public String searchUserIdProc(HttpServletRequest request, ModelMap model) throws Exception{
+        log.info("{}.searchUserIdProc Start!",this.getClass().getName());
+
+        String userName = CmmUtil.nvl(request.getParameter("userName"));
+        String email = CmmUtil.nvl(request.getParameter("email"));
+
+        log.info("userName : {} email : {}", userName, email);
+
+        UserInfoDTO pDTO = new UserInfoDTO();
+        pDTO.setUserName(userName);
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email));
+
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoService.searchUserIdOrPasswordProc(pDTO)).orElseGet(UserInfoDTO::new);
+
+        model.addAttribute("rDTO",rDTO);
+
+        log.info("{}.searchUserIdProc End!",this.getClass().getName());
+
+        return "user/searchUserIdResult";
+    }
+    @GetMapping(value = "searchPassword")
+    public String searchPassword(HttpSession session) {
+        log.info("{}.searchPassword Start!", this.getClass().getName());
+
+        session.setAttribute("NEW_PASSWORD", "");
+        session.removeAttribute("NEW_PASSWORD");
+
+        log.info("{}.searchPassword End!", this.getClass().getName());
+
+        return "user/searchPassword";
+    }
+    @PostMapping(value = "searchPasswordProc")
+    public String searchPasswordProc(HttpServletRequest request, ModelMap model, HttpSession session) throws Exception{
+        log.info("{}.searchPasswordProc Start!", this.getClass().getName());
+
+        String userId = CmmUtil.nvl(request.getParameter("userId"));
+        String userName = CmmUtil.nvl(request.getParameter("userName"));
+        String email = CmmUtil.nvl(request.getParameter("email"));
+
+        log.info("userId : {} userName : {} email : {}", userId, userName, email);
+
+        UserInfoDTO pDTO = new UserInfoDTO();
+        pDTO.setUserId(userId);
+        pDTO.setUserName(userName);
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email));
+
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoService.searchUserIdOrPasswordProc(pDTO)).orElseGet(UserInfoDTO::new);
+
+        model.addAttribute("rDTO",rDTO);
+
+        session.setAttribute("NEW_PASSWORD", userId);
+
+        log.info("{}.searchPasswordProc End!",this.getClass().getName());
+
+        return "user/newPassword";
+    }
+
+    @PostMapping(value = "newPasswordProc")
+    public String newPasswordProc(HttpServletRequest request, ModelMap model, HttpSession session) throws Exception{
+
+        log.info("{}.user/newPasswordProc Start!", this.getClass().getName());
+
+        String msg;
+        String newPassword = CmmUtil.nvl((String)session.getAttribute("NEW_PASSWORD"));
+
+        if(!newPassword.isEmpty()){
+            String password = CmmUtil.nvl(request.getParameter("password"));
+
+            log.info("password : {}", password);
+
+            UserInfoDTO pDTO = new UserInfoDTO();
+            pDTO.setUserId(newPassword);
+            pDTO.setPassword(EncryptUtil.encHashSHA256(password));
+
+            userInfoService.newPasswordProc(pDTO);
+
+            session.setAttribute("NEW_PASSWORD","");
+            session.removeAttribute("NEW_PASSWORD");
+
+            msg="비밀번호가 재설정되었습니다";
+
+        } else {
+            msg="비정상 접근입니다";
+        }
+        model.addAttribute("msg",msg);
+        log.info("{}.user/newPasswordProc End!",this.getClass().getName());
+
+        return "user/newPasswordResult";
     }
 
 }

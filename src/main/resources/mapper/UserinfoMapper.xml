@@ -21,6 +21,24 @@
         WHERE USER_ID = #{userId}
         AND PASSWORD = #{password}
     </select>
+    <select id="getUserId" parameterType="UserInfoDTO" resultType="UserInfoDTO">
+        SELECT
+            USER_ID,
+            USER_NAME,
+            EMAIL
+        FROM USER_INFO
+        WHERE 1=1
+        <if test="userId neq null and userId neq '' ">
+            AND USER_ID = #{userId}
+        </if>
+        AND USER_NAME = #{userName}
+        AND EMAIL = #{email}
+    </select>
+    <update id="updatePassword" parameterType="UserInfoDTO">
+        UPDATE USER_INFO
+        SET PASSWORD = #{password}
+        WHERE USER_ID = #{userId}
+    </update>
     <insert id="insertUserInfo" parameterType="UserInfoDTO">
         INSERT INTO USER_INFO
         (USER_ID,
