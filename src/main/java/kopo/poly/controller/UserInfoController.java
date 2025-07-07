@@ -1,6 +1,7 @@
 package kopo.poly.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import kopo.poly.dto.MsgDTO;
 import kopo.poly.dto.UserInfoDTO;
 import kopo.poly.service.IUserInfoService;
@@ -124,4 +125,68 @@ public class UserInfoController {
         }
         return dto;
     }
+    @GetMapping(value = "login")
+    public String login(){
+        log.info("{}.login Start!",this.getClass().getName());
+
+        log.info("{}.login End!",this.getClass().getName());
+
+        return "user/login";
+    }
+    @ResponseBody
+    @PostMapping(value = "loginProc")
+    public MsgDTO loginProc(HttpServletRequest request, HttpSession session){
+        log.info("{}.loginProc Start!",this.getClass().getName());
+
+        int res = 0;
+        String msg ="";
+        MsgDTO dto;
+
+        UserInfoDTO pDTO;
+
+        try {
+            String userId = CmmUtil.nvl(request.getParameter("userId"));
+            String password = CmmUtil.nvl(request.getParameter("password"));
+
+            log.info("userId : {} / password : {}", userId, password);
+
+            pDTO = new UserInfoDTO();
+
+            pDTO.setUserId(userId);
+
+            pDTO.setPassword(EncryptUtil.encHashSHA256(password));
+
+            UserInfoDTO rDTO = userInfoService.getLogin(pDTO);
+
+            if(!CmmUtil.nvl(rDTO.getUserId()).isEmpty()){
+                res=1;
+
+                msg="로그인이 성공했습니다";
+
+                session.setAttribute("SS_USER_ID",userId);
+                session.setAttribute("SS_USER_NAME",CmmUtil.nvl(rDTO.getUserName()));
+            } else {
+                msg = "아이디와 비밀번호가 올바르지 않습니다.";
+            }
+        } catch(Exception e){
+            msg="시스템 문제로 로그인 실패";
+            res=2;
+            log.info(e.toString());
+        } finally {
+            dto = new MsgDTO();
+            dto.setResult(res);
+            dto.setMsg(msg);
+            log.info("{}.loginProc End!",this.getClass().getName());
+        }
+        return dto;
+    }
+    @GetMapping(value = "loginResult")
+    public String loginSuccess(){
+        log.info("{}.loginResult Start!",this.getClass().getName());
+
+        log.info("{}.loginResult End!",this.getClass().getName());
+
+        return "user/loginResult";
+    }
+
 }

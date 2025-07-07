@@ -6,6 +6,7 @@ import kopo.poly.mapper.IUserInfoMapper;
 import kopo.poly.service.IMailService;
 import kopo.poly.service.IUserInfoService;
 import kopo.poly.util.CmmUtil;
+import kopo.poly.util.DateUtil;
 import kopo.poly.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,5 +86,27 @@ public class UserInfoService implements IUserInfoService {
         }
         log.info("{}.insertUserInfo End!", this.getClass().getName());
         return res;
+    }
+
+    @Override
+    public UserInfoDTO getLogin(UserInfoDTO pDTO) throws Exception {
+        log.info("{}.getlogin Start!", this.getClass().getName());
+
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoMapper.getLogin(pDTO)).orElseGet(UserInfoDTO::new);
+
+        if(!CmmUtil.nvl(rDTO.getUserId()).isEmpty()){
+            MailDTO mDTO = new MailDTO();
+
+            mDTO.setToMail(EncryptUtil.decAES128CBC(CmmUtil.nvl(rDTO.getEmail())));
+
+            mDTO.setTitle("로그인 알림!");
+
+            mDTO.setContents(DateUtil.getDateTime("yyyy.MM.dd hh:mm:ss") + "에"
+            + CmmUtil.nvl(rDTO.getUserName()) + "님이 로그인하였습니다.");
+
+            mailService.doSendMail(mDTO);
+        }
+        log.info("{}.getlogin End!", this.getClass().getName());
+        return rDTO;
     }
 }
