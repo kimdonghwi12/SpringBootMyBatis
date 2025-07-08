@@ -1,34 +1,113 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <title>로그인하기</title>
-    <link rel="stylesheet" href="/css/table.css"/>
-    <script type="text/javascript" src="/js/jquery-3.6.0.min.js"></script>
-    <script type="text/javascript">
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <script src="/js/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Gowun Dodum', sans-serif;
+            background-color: #fffde7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
-        // HTML로딩이 완료되고, 실행됨
+        .login-box {
+            background-color: #ffffff;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 360px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .login-box h2 {
+            color: #ff9800;
+            margin-bottom: 10px;
+            font-size: 26px;
+        }
+
+        .input-field {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-field label {
+            font-size: 14px;
+            color: #444;
+        }
+
+        .input-field input {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .button-area {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .button-area button {
+            padding: 12px;
+            background-color: #ffcc80;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .button-area button:hover {
+            background-color: #ffb74d;
+        }
+
+        .link-buttons {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .link-buttons button {
+            background: none;
+            border: none;
+            color: #555;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 4px 0;
+        }
+
+        .link-buttons button:hover {
+            color: #000;
+        }
+    </style>
+
+    <script>
         $(document).ready(function () {
+            $("#btnUserReg").click(() => location.href = "/user/userRegForm");
+            $("#btnSearchUserId").click(() => location.href = "/user/searchUserId");
+            $("#btnSearchPassword").click(() => location.href = "/user/searchPassword");
 
-            // 회원가입
-            $("#btnUserReg").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
-                location.href = "/user/userRegForm";
-            })
-
-            // 아이디 찾기
-            $("#btnSearchUserId").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
-                location.href = "/user/searchUserId";
-            })
-
-            // 비밀번호 찾기
-            $("#btnSearchPassword").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
-                location.href = "/user/searchPassword";
-            })
-
-            // 로그인
-            $("#btnLogin").on("click", function () {
-                let f = document.getElementById("f"); // form 태그
+            $("#btnLogin").click(function () {
+                const f = document.getElementById("f");
 
                 if (f.userId.value === "") {
                     alert("아이디를 입력하세요.");
@@ -42,60 +121,46 @@
                     return;
                 }
 
-                // Ajax 호출해서 로그인하기
                 $.ajax({
-                        url: "/user/loginProc",
-                        type: "post", // 전송방식은 Post
-                        dataType: "JSON", // 전송 결과는 JSON으로 받기
-                        data: $("#f").serialize(), // form 태그 내 input 등 객체를 자동으로 전송할 형태로 변경하기
-                        success: function (json) { // /notice/noticeUpdate 호출이 성공했다면..
-
-                            if (json.result === 1) { // 로그인 성공
-                                alert(json.msg); // 메시지 띄우기
-                                location.href = "/user/loginResult"; // 로그인 성공 페이지 이동
-
-                            } else { // 로그인 실패
-                                alert(json.msg); // 메시지 띄우기
-                                $("#userId").focus(); // 아이디 입력 항목에 마우스 커서 이동
-                            }
-
+                    url: "/user/loginProc",
+                    type: "post",
+                    dataType: "JSON",
+                    data: $("#f").serialize(),
+                    success: function (json) {
+                        if (json.result === 1) {
+                            alert(json.msg);
+                            location.href = "/user/loginResult";
+                        } else {
+                            alert(json.msg);
+                            $("#userId").focus();
                         }
                     }
-                )
-
-            })
-        })
+                });
+            });
+        });
     </script>
 </head>
 <body>
-<h2>로그인하기</h2>
-<hr/>
-<br/>
-<form id="f">
-    <div class="divTable minimalistBlack">
-        <div class="divTableBody">
-            <div class="divTableRow">
-                <div class="divTableCell">아이디
-                </div>
-                <div class="divTableCell">
-                    <input type="text" name="userId" id="userId" style="width:95%"/>
-                </div>
-            </div>
-            <div class="divTableRow">
-                <div class="divTableCell">비밀번호
-                </div>
-                <div class="divTableCell">
-                    <input type="password" name="password" id="password" style="width:95%"/>
-                </div>
-            </div>
+<div class="login-box">
+    <h2>👪 로그인하기</h2>
+    <form id="f">
+        <div class="input-field">
+            <label for="userId">아이디</label>
+            <input type="text" name="userId" id="userId" />
         </div>
-    </div>
-    <div>
-        <button id="btnLogin" type="button">로그인</button>
-        <button id="btnUserReg" type="button">회원가입</button>
-        <button id="btnSearchUserId" type="button">아이디 찾기</button>
-        <button id="btnSearchPassword" type="button">비밀번호 찾기</button>
-    </div>
-</form>
+        <div class="input-field">
+            <label for="password">비밀번호</label>
+            <input type="password" name="password" id="password" />
+        </div>
+        <div class="button-area">
+            <button id="btnLogin" type="button">로그인</button>
+        </div>
+        <div class="link-buttons">
+            <button id="btnUserReg" type="button">🆕 회원가입</button>
+            <button id="btnSearchUserId" type="button">🔍 아이디 찾기</button>
+            <button id="btnSearchPassword" type="button">🔑 비밀번호 찾기</button>
+        </div>
+    </form>
+</div>
 </body>
 </html>
