@@ -49,11 +49,11 @@
         }
 
         .main-button {
-            padding: 16px 32px;
+            padding: 18px 36px;
             background-color: #ffcc80;
             border: none;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             cursor: pointer;
             color: #333;
@@ -68,6 +68,7 @@
     <script>
         $(document).ready(function () {
             $("#btnSend").click(function () {
+                // 메인 화면으로 이동 (Google Map 포함된 페이지)
                 location.href = "/html/index.html";
             });
         });
@@ -80,7 +81,7 @@
         <%=ssUserName%> 님이 로그인하였습니다.<br/>
         아이디는 <strong><%=ssUserId%></strong> 입니다.
     </div>
-    <button id="btnSend" class="main-button">메인 화면 이동</button>
+    <button id="btnSend" class="main-button">📍 메인 화면 이동</button>
 </div>
 </body>
 </html>
