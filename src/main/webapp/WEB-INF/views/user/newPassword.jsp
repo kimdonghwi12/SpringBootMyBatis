@@ -3,109 +3,149 @@
 <%@ page import="kopo.poly.util.CmmUtil" %>
 <%
     UserInfoDTO rDTO = (UserInfoDTO) request.getAttribute("rDTO");
-
-    // 비밀번호 재설정 접속 가능한지 체크
     String newPassword = CmmUtil.nvl((String) session.getAttribute("NEW_PASSWORD"));
 
     String msg = "";
-
-    if (CmmUtil.nvl(rDTO.getUserId()).length() > 0) { // 아이디 찾기 성공
-
-        if (newPassword.length() == 0) { // 비정상적인 접근
-            msg = "비정상적인 접근입니다. \n비밀번호 재설정 화면에 접근할 수 없습니다.";
-
+    if (CmmUtil.nvl(rDTO.getUserId()).length() > 0) {
+        if (newPassword.length() == 0) {
+            msg = "비정상적인 접근입니다.\\n비밀번호 재설정 화면에 접근할 수 없습니다.";
         }
     } else {
         msg = "회원정보가 존재하지 않습니다.";
-
     }
 %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <title><%=CmmUtil.nvl(rDTO.getUserName())%> 회원님의 비밀번호 재설정</title>
-    <link rel="stylesheet" href="/css/table.css"/>
-    <script type="text/javascript" src="/js/jquery-3.6.0.min.js"></script>
-    <script type="text/javascript">
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <script src="/js/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Gowun Dodum', sans-serif;
+            background-color: #fffde7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
-        <%
-        // 비정상적인 접근 및 회원정보가 없는 경우 뒤로 가기
-        if (msg.length()>0){
-        %>
+        .form-box {
+            background-color: #ffffff;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 360px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-box h2 {
+            color: #ff9800;
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            color: #444;
+        }
+
+        .form-group input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .button-area {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .button-area button {
+            padding: 10px 20px;
+            background-color: #ffcc80;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            color: #333;
+            transition: background-color 0.3s;
+        }
+
+        .button-area button:hover {
+            background-color: #ffb74d;
+        }
+    </style>
+
+    <script>
+        <% if (msg.length() > 0) { %>
         alert("<%=msg%>");
         history.back();
-        <%
-        }
-        %>
+        <% } %>
 
-        // HTML로딩이 완료되고, 실행됨
         $(document).ready(function () {
-
-            // 로그인 화면 이동
-            $("#btnLogin").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
+            $("#btnLogin").click(function () {
                 location.href = "/user/login";
-            })
+            });
 
-            // 비밀번호  찾기
-            $("#btnSearchPassword").on("click", function () {
-                let f = document.getElementById("f"); // form 태그
+            $("#btnSearchPassword").click(function () {
+                const f = document.getElementById("f");
 
                 if (f.password.value === "") {
                     alert("새로운 비밀번호를 입력하세요.");
-                    f.password.focus();
-                    return;
+                    f.password.focus(); return;
                 }
 
                 if (f.password2.value === "") {
                     alert("검증을 위한 새로운 비밀번호를 입력하세요.");
-                    f.password2.focus();
-                    return;
+                    f.password2.focus(); return;
                 }
-
 
                 if (f.password.value !== f.password2.value) {
                     alert("입력한 비밀번호가 일치하지 않습니다.");
-                    f.password.focus();
-                    return;
+                    f.password.focus(); return;
                 }
 
-                f.method = "post"; // 비밀번호 찾기 정보 전송 방식
-                f.action = "/user/newPasswordProc" // 비밀번호 찾기 URL
-
-                f.submit(); // 아이디 찾기 정보 전송하기
-            })
-        })
+                f.method = "post";
+                f.action = "/user/newPasswordProc";
+                f.submit();
+            });
+        });
     </script>
 </head>
 <body>
-<h2><%=CmmUtil.nvl(rDTO.getUserName())%> 회원님의 비밀번호 재설정</h2>
-<hr/>
-<br/>
-<form id="f">
-    <div class="divTable minimalistBlack">
-        <div class="divTableBody">
-            <div class="divTableRow">
-                <div class="divTableCell">새로운 비밀번호
-                </div>
-                <div class="divTableCell">
-                    <input type="password" name="password" id="password" style="width:95%"/>
-                </div>
-            </div>
-            <div class="divTableRow">
-                <div class="divTableCell">검증을 위한 새로운 비밀번호
-                </div>
-                <div class="divTableCell">
-                    <input type="password" name="password2" id="password2" style="width:95%"/>
-                </div>
-            </div>
-        </div>
+<form id="f" class="form-box">
+    <h2>🔐 <%=CmmUtil.nvl(rDTO.getUserName())%> 회원님의 비밀번호 재설정</h2>
+
+    <div class="form-group">
+        <label for="password">새로운 비밀번호</label>
+        <input type="password" name="password" id="password" placeholder="새로운 비밀번호 입력" />
     </div>
-    <div>
+
+    <div class="form-group">
+        <label for="password2">검증용 비밀번호</label>
+        <input type="password" name="password2" id="password2" placeholder="비밀번호 재입력" />
+    </div>
+
+    <div class="button-area">
         <button id="btnSearchPassword" type="button">비밀번호 재설정</button>
         <button id="btnLogin" type="button">로그인</button>
     </div>
 </form>
 </body>
 </html>
-
