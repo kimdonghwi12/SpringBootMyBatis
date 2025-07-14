@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>내 위치 + 노인 보호구역 지도</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCfctMZZRLHZltls7z8a5mIYuusN2-pJZ4"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Gowun Dodum', sans-serif;
+        }
+
+        h2 {
+            text-align: center;
+            color: #8d6e63;
+            margin: 16px 0;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+
+        #map {
+            flex: 2;
+        }
+
+        #sidebar {
+            flex: 1;
+            background-color: #f9f9f9;
+            padding: 20px;
+            box-sizing: border-box;
+            border-left: 1px solid #ddd;
+        }
+
+        #sidebar h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .nav-button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            font-size: 16px;
+            background-color: #8d6e63;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-button:hover {
+            background-color: #6d4c41;
+        }
+
+        .message {
+            text-align: center;
+            font-size: 15px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<h2>📍 현재 내 위치 + 노인 보호구역</h2>
+
+<div class="message">📂 데이터는 아직 준비 중입니다</div>
+
+<div class="container">
+    <div id="map"></div>
+
+    <div id="sidebar">
+        <h3>🧭 길안내 모드</h3>
+        <button class="nav-button">🚗 자동차 길안내</button>
+        <button class="nav-button">🚶 도보 길안내</button>
+        <button class="nav-button">🚴 자전거 길안내</button>
+    </div>
+</div>
+
+<script>
+    let map;
+
+    function initMap(lat, lng) {
+        const myPos = { lat, lng };
+
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: myPos,
+            zoom: 15,
+        });
+
+        new google.maps.Marker({
+            position: myPos,
+            map: map,
+            title: "내 위치",
+            animation: google.maps.Animation.DROP,
+        });
+
+
+    }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                initMap(lat, lng);
+            },
+            () => {
+                alert("위치 정보를 불러올 수 없습니다.");
+            }
+        );
+    } else {
+        alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
+    }
+</script>
+
+</body>
+</html>

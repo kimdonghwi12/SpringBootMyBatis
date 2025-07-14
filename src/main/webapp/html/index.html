@@ -2,148 +2,107 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8" />
-    <title>내 위치 + 스쿨존 지도</title>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCfctMZZRLHZltls7z8a5mIYuusN2-pJZ4"></script>
+    <title>보호구역 선택</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet" />
     <style>
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Gowun Dodum', sans-serif;
+            font-family: 'Jua', sans-serif;
+            background: linear-gradient(to bottom, #fff3e0, #ffe0b2);
         }
 
         h2 {
             text-align: center;
-            color: #ff9800;
-            margin: 16px 0;
+            margin-top: 60px;
+            font-size: 32px;
+            color: #4e342e;
         }
 
-        .container {
+        .menu-container {
             display: flex;
-            height: calc(100vh - 80px); /* 상단 타이틀 공간 제외 */
+            justify-content: center;
+            gap: 50px;
+            margin-top: 60px;
+            flex-wrap: wrap;
         }
 
-        #map {
-            flex: 2;
-        }
-
-        #sidebar {
-            flex: 1;
-            background-color: #f9f9f9;
-            padding: 20px;
-            box-sizing: border-box;
-            border-left: 1px solid #ddd;
-        }
-
-        #sidebar h3 {
-            margin-top: 0;
-            color: #333;
-        }
-
-        .nav-button {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            font-size: 16px;
-            background-color: #ff9800;
-            color: white;
+        .zone-button {
+            width: 260px;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             border: none;
+            border-radius: 24px;
+            background-color: white;
+            box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.08);
             cursor: pointer;
-            border-radius: 6px;
-            transition: background-color 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
+            padding: 20px;
         }
 
-        .nav-button:hover {
-            background-color: #e67e00;
+        .zone-button:hover {
+            transform: translateY(-6px);
+            box-shadow: 6px 6px 16px rgba(0, 0, 0, 0.12);
+            background-color: #fff8e1;
         }
 
-        .message {
-            text-align: center;
-            font-size: 15px;
-            color: #444;
+        .zone-button img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            margin-bottom: 14px;
+        }
+
+        .zone-label {
+            font-size: 22px;
+            color: #5d4037;
+        }
+
+        @media screen and (max-width: 600px) {
+            .zone-button {
+                width: 90%;
+                height: auto;
+                padding: 24px 16px;
+            }
+
+            .zone-button img {
+                width: 100px;
+                height: 100px;
+            }
+
+            .zone-label {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 <body>
 
-<h2>📍 현재 내 위치 + 전국 어린이 보호구역</h2>
+<h2>🛡️ 어떤 보호구역을 확인할까요?</h2>
 
-<div class="message">“zones.json”에서 스쿨존 마커를 불러오는 중입니다</div>
+<div class="menu-container">
+    <button class="zone-button" onclick="goToMap('children')">
+        <img src="../images/어린이.jpg" alt="어린이 보호구역" />
+        <div class="zone-label">👶 어린이 보호구역</div>
+    </button>
 
-<div class="container">
-    <div id="map"></div>
+    <button class="zone-button" onclick="window.location.href='map1.html'">
+        <img src="../images/노인.png" alt="노인 보호구역" />
+        <div class="zone-label">👴 노인 보호구역</div>
+    </button>
 
-    <div id="sidebar">
-        <h3>🧭 길안내 모드</h3>
-        <button class="nav-button">🚗 자동차 길안내</button>
-        <button class="nav-button">🚶 도보 길안내</button>
-        <button class="nav-button">🚴 자전거 길안내</button>
-    </div>
+    <button class="zone-button" onclick="window.location.href='map2.html'">
+        <img src="../images/사고다발지역.jpg" alt="사고 다발지역" />
+        <div class="zone-label">💥 사고 다발지역</div>
+    </button>
 </div>
 
 <script>
-    let map;
-
-    function initMap(lat, lng) {
-        const myPos = { lat, lng };
-
-        map = new google.maps.Map(document.getElementById("map"), {
-            center: myPos,
-            zoom: 15,
-        });
-
-        new google.maps.Marker({
-            position: myPos,
-            map: map,
-            title: "내 위치",
-            animation: google.maps.Animation.DROP,
-        });
-
-        fetch("/data/zones.json")
-            .then((res) => res.json())
-            .then((json) => {
-                const zones = json.records;
-
-                zones.forEach((zone) => {
-                    const lat = parseFloat(zone["위도"]);
-                    const lng = parseFloat(zone["경도"]);
-                    const name = zone["대상시설명"];
-
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        const marker = new google.maps.Marker({
-                            position: { lat, lng },
-                            map: map,
-                            title: `🧒 ${name}`,
-                            icon: "https://maps.google.com/mapfiles/ms/icons/yellow-dot.png",
-                        });
-
-                        const infoWindow = new google.maps.InfoWindow({
-                            content: `<b>${name}</b>`,
-                        });
-
-                        marker.addListener("click", () => {
-                            infoWindow.open(map, marker);
-                        });
-                    }
-                });
-            })
-            .catch((err) => {
-                console.error("zones.json 로딩 실패:", err);
-            });
-    }
-
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                initMap(lat, lng);
-            },
-            () => {
-                alert("위치 정보를 불러올 수 없습니다.");
-            }
-        );
-    } else {
-        alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
+    function goToMap(type) {
+        window.location.href = `map.html?type=${type}`;
     }
 </script>
 

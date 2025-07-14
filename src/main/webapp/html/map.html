@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>티맵 어린이보호구역 회피 스마트 길찾기</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <!-- TMAP JS 라이브러리. appKey는 본인 것으로! -->
+    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=kNCek6udB12JVr0qSGaOi8ELQvMieR941FXq3TRf"></script>
+    <style>
+        body { font-family:'Pretendard', Arial,sans-serif; margin:0; background:#f9fafd;}
+        .header { background:#2777f7; color:#fff; text-align:center; font-size:2rem; padding:25px 0 16px;}
+        .panel { max-width:750px; margin:32px auto; background:#fff; border-radius:16px; box-shadow:0 2px 16px rgba(90,110,150,0.07); padding:28px 32px 20px;}
+        .inputs { display:flex; gap:9px; margin-bottom:17px; align-items:center; flex-wrap:wrap;}
+        input, select, button { border:1px solid #dae2ec; border-radius:8px; padding:8px 12px; font-size:1.05rem;}
+        input { flex:1 1 210px; min-width:130px;}
+        button { background:#2777f7; color:#fff; border:none; cursor:pointer; font-weight:600; transition:background 0.16s;}
+        button:hover { background:#174eb5;}
+        #map_div { width:100%; height:420px; border-radius:14px; border:1.5px solid #e3e7ee; margin:10px 0 18px;}
+        #result { background:#f7fafd; border-radius:7px; padding:16px 15px 10px 15px; margin-bottom:0; font-size:1.12rem; color:#2777f7; min-height:24px;}
+        .credit { text-align:right; color:#bac2da; font-size:.93rem; margin-top:11px; margin-right:6px;}
+        @media (max-width: 750px) {.panel { max-width:99vw; padding:13px 2vw 9px 2vw;} .header { font-size:1.18rem; padding:16px 0 8px;} #map_div{height:250px;}}
+    </style>
+</head>
+<body>
+<div class="header">🚸 티맵 어린이보호구역 회피 스마트 길찾기</div>
+<div class="panel">
+    <div class="inputs">
+        <input type="text" id="startText" placeholder="출발지명 or 주소" autocomplete="off">
+        <button id="btn_cur">현재 위치</button>
+        <input type="text" id="endText" placeholder="도착지명 or 주소" autocomplete="off">
+        <select id="searchOption">
+            <option value="0" selected>교통최적+추천</option>
+            <option value="1">교통최적+무료우선</option>
+            <option value="2">교통최적+최소시간</option>
+            <option value="3">교통최적+초보</option>
+            <option value="4">교통최적+고속도로우선</option>
+            <option value="10">최단거리+유/무료</option>
+            <option value="12">이륜차도로우선</option>
+            <option value="19">교통최적+어린이보호구역 회피</option>
+        </select>
+        <button id="btn_search">경로 탐색</button>
+    </div>
+    <div id="map_div"></div>
+    <div id="result">출발지/도착지를 입력하고 [경로 탐색]을 눌러주세요.</div>
+    <div class="credit">Powered by TMAP Open API</div>
+</div>
+<script>
+    var TMAP_APPKEY = "kNCek6udB12JVr0qSGaOi8ELQvMieR941FXq3TRf";
+    var map, marker_s, marker_e, resultdrawArr = [], resultMarkerArr = [], drawInfoArr = [];
+
+    // 지도 초기화
+    function initTmap() {
+        map = new Tmapv2.Map("map_div", {
+            center: new Tmapv2.LatLng(37.554722, 126.970833), // 서울역 근처
+            width: "100%",
+            height: "420px",
+            zoom: 12,
+            zoomControl: true,
+            scrollwheel: true
+        });
+    }
+
+    $(document).ready(function () {
+        initTmap();
+
+        // 현재 위치로 출발지 자동입력
+        $("#btn_cur").click(function () {
+            if (!navigator.geolocation) {
+                alert("브라우저에서 위치정보를 지원하지 않습니다.");
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+                // 역지오코딩으로 지명 자동입력 (없으면 좌표 노출)
+                $.ajax({
+                    url: "https://apis.openapi.sk.com/tmap/geo/reversegeocoding",
+                    type: "GET",
+                    headers: { appKey: TMAP_APPKEY },
+                    data: {
+                        version: "1",
+                        lat: lat,
+                        lon: lng,
+                        coordType: "WGS84GEO",
+                        addressType: "A"
+                    },
+                    success: function (res) {
+                        var addr = res.addressInfo.fullAddress || (lat + "," + lng);
+                        $("#startText").val(addr).data("coords", { lat: lat, lng: lng });
+                    },
+                    error: function () {
+                        $("#startText").val(lat + "," + lng).data("coords", { lat: lat, lng: lng });
+                    }
+                });
+            }, function () {
+                alert("위치정보 접근 실패");
+            });
+        });
+
+        // 경로 탐색 버튼 클릭
+        $("#btn_search").click(function () {
+            var startInput = $("#startText").val().trim();
+            var endInput = $("#endText").val().trim();
+            if (!startInput || !endInput) {
+                $("#result").css('color', '#d11').text("출발지와 도착지를 입력하세요.");
+                return;
+            }
+
+            $("#result").css('color', '#2777f7').text("경로 검색 중...");
+            resettingMap();
+
+            // 출발/도착 좌표 변환 후 경로 검색
+            getCoords(startInput, function (err, start) {
+                if (err) {
+                    $("#result").css('color', '#d11').text("출발지 위치 변환 실패");
+                    return;
+                }
+                getCoords(endInput, function (err2, end) {
+                    if (err2) {
+                        $("#result").css('color', '#d11').text("도착지 위치 변환 실패");
+                        return;
+                    }
+                    searchRoute(start, end);
+                });
+            });
+        });
+    });
+
+    // 입력값 → 좌표 변환 (주소 or 장소명 모두 지원)
+    function getCoords(query, cb) {
+        // (이미 현재위치 버튼 등에서 lat/lng 넘긴 경우)
+        if (typeof query === "object" && query.lat && query.lng) {
+            cb(null, query);
+            return;
+        }
+
+        // 1. POI(장소명) 검색 → 2. 실패시 주소검색 → 3. 둘다 실패시 좌표로 인식 시도
+        $.ajax({
+            url: "https://apis.openapi.sk.com/tmap/pois",
+            type: "GET",
+            headers: { appKey: TMAP_APPKEY },
+            data: {
+                version: "1",
+                format: "json",
+                count: 1,
+                searchKeyword: query,
+                resCoordType: "WGS84GEO"
+            },
+            success: function (res) {
+                if (res.searchPoiInfo && res.searchPoiInfo.pois && res.searchPoiInfo.pois.poi.length > 0) {
+                    var poi = res.searchPoiInfo.pois.poi[0];
+                    cb(null, { lat: parseFloat(poi.frontLat), lng: parseFloat(poi.frontLon) });
+                } else {
+                    // 2. 주소검색(geocode) 시도
+                    $.ajax({
+                        url: "https://apis.openapi.sk.com/tmap/geo/fullAddrGeo",
+                        type: "GET",
+                        headers: { appKey: TMAP_APPKEY },
+                        data: {
+                            version: "1",
+                            format: "json",
+                            fullAddr: query
+                        },
+                        success: function (res2) {
+                            if (res2.coordinateInfo && res2.coordinateInfo.coordinate.length > 0) {
+                                var c = res2.coordinateInfo.coordinate[0];
+                                cb(null, { lat: parseFloat(c.newLat), lng: parseFloat(c.newLon) });
+                            } else {
+                                tryParseCoord(query, cb);
+                            }
+                        },
+                        error: function () {
+                            tryParseCoord(query, cb);
+                        }
+                    });
+                }
+            },
+            error: function () {
+                tryParseCoord(query, cb);
+            }
+        });
+    }
+
+    // 만약 사용자가 "37.566,126.978" 형태로 입력했다면 좌표로 인식
+    function tryParseCoord(str, cb) {
+        var match = str.match(/^([0-9.]+)[ ,]+([0-9.]+)$/);
+        if (match) {
+            cb(null, { lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
+        } else {
+            cb("변환실패", null);
+        }
+    }
+
+    // 길찾기 API 호출 및 지도 표시
+    function searchRoute(start, end) {
+        var searchOption = $("#searchOption").val();
+
+        var headers = { "appKey": TMAP_APPKEY };
+        $.ajax({
+            type: "POST",
+            headers: headers,
+            url: "https://apis.openapi.sk.com/tmap/routes?version=1&format=json",
+            data: {
+                startX: start.lng,
+                startY: start.lat,
+                endX: end.lng,
+                endY: end.lat,
+                reqCoordType: "WGS84GEO",
+                resCoordType: "EPSG3857",
+                searchOption: searchOption,
+                trafficInfo: "Y"
+            },
+            success: function (response) {
+                var resultData = response.features;
+                if (!resultData || resultData.length === 0) {
+                    $("#result").css('color', '#d11').text("경로가 없습니다!");
+                    return;
+                }
+
+                // 거리/시간/요금
+                var tDistance = "총 거리 : " + (resultData[0].properties.totalDistance / 1000).toFixed(1) + "km, ";
+                var tTime = "총 시간 : " + (resultData[0].properties.totalTime / 60).toFixed(0) + "분, ";
+                var tFare = "총 요금 : " + resultData[0].properties.totalFare + "원, ";
+                var taxiFare = "예상 택시요금 : " + resultData[0].properties.taxiFare + "원";
+                $("#result").css('color', '#2777f7').text(tDistance + tTime + tFare + taxiFare);
+
+                // 출발지, 도착지 마커
+                marker_s = new Tmapv2.Marker({
+                    position: new Tmapv2.LatLng(start.lat, start.lng),
+                    icon: "https://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png",
+                    iconSize: new Tmapv2.Size(24, 38),
+                    map: map
+                });
+                marker_e = new Tmapv2.Marker({
+                    position: new Tmapv2.LatLng(end.lat, end.lng),
+                    icon: "https://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_e.png",
+                    iconSize: new Tmapv2.Size(24, 38),
+                    map: map
+                });
+                resultMarkerArr.push(marker_s);
+                resultMarkerArr.push(marker_e);
+
+                // 경로 라인 그리기
+                drawInfoArr = [];
+                for (var i in resultData) {
+                    var geometry = resultData[i].geometry;
+                    if (geometry.type === "LineString") {
+                        for (var j in geometry.coordinates) {
+                            var latlng = new Tmapv2.Point(geometry.coordinates[j][0], geometry.coordinates[j][1]);
+                            var convertPoint = new Tmapv2.Projection.convertEPSG3857ToWGS84GEO(latlng);
+                            var convertChange = new Tmapv2.LatLng(convertPoint._lat, convertPoint._lng);
+                            drawInfoArr.push(convertChange);
+                        }
+                    }
+                }
+                var polyline_ = new Tmapv2.Polyline({
+                    path: drawInfoArr,
+                    strokeColor: "#2777f7",
+                    strokeWeight: 7,
+                    map: map
+                });
+                resultdrawArr.push(polyline_);
+                // 지도 중심 이동
+                map.setCenter(new Tmapv2.LatLng((start.lat + end.lat) / 2, (start.lng + end.lng) / 2));
+            },
+            error: function (request, status, error) {
+                $("#result").css('color', '#d11').text("에러 발생! 앱키, 네트워크, 쿼터, 상품 활성화 여부 확인");
+            }
+        });
+    }
+
+    // 지도/마커/경로 초기화
+    function resettingMap() {
+        if (marker_s) marker_s.setMap(null);
+        if (marker_e) marker_e.setMap(null);
+        if (resultMarkerArr.length > 0) {
+            for (var i = 0; i < resultMarkerArr.length; i++) resultMarkerArr[i].setMap(null);
+        }
+        if (resultdrawArr.length > 0) {
+            for (var j = 0; j < resultdrawArr.length; j++) resultdrawArr[j].setMap(null);
+        }
+        drawInfoArr = [];
+        resultMarkerArr = [];
+        resultdrawArr = [];
+    }
+</script>
+</body>
+</html>
